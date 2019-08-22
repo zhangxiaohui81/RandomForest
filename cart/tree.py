@@ -27,6 +27,7 @@ class Node:
         self.walker = None
         self.feature_indexes = feature_indexes
         self.impurity = impurity
+        self.value = None
 
     def is_leaf(self):
         return self.left is None and self.right is None

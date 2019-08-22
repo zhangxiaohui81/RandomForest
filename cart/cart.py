@@ -9,16 +9,16 @@ class ClassificationAndRegressionTree:
     def __init__(self,
                  criterion = 'gini',
                  # splitter = 'best',
-                 max_depth = None,
+                 max_depth = 8,
                  min_samples_split = 2,
                  min_samples_leaf = 1,
                  min_weight_fraction_leaf = 0.0,
                  max_features = None,
-                 random_state = None,
-                 max_leaf_nodes = None,
-                 min_impurity_decrease = 0.0,
-                 min_impurity_split = None,
-                 class_weight = None,
+                 random_state = 42,
+                 max_leaf_nodes = 20,
+                 min_impurity_decrease = 1e-4,
+                 min_impurity_split = 2e-4,
+                 # class_weight = None,
                  # presort = False
                  ):
 
@@ -33,16 +33,16 @@ class ClassificationAndRegressionTree:
         else:
             raise NotImplemented
 
-        self.max_depth = max_depth
-        self.min_samples_split = min_samples_split
-        self.min_samples_leaf = min_samples_leaf
-        self.min_weight_fraction_leaf = min_weight_fraction_leaf
+        self.max_depth = max_depth or 8
+        self.min_samples_split = min_samples_split or 2
+        self.min_samples_leaf = min_samples_leaf or 1
+        self.min_weight_fraction_leaf = min_weight_fraction_leaf or 0.0
         self.max_features = max_features
-        self.random_state = random_state
-        self.max_leaf_nodes = max_leaf_nodes
-        self.min_impurity_decrease = min_impurity_decrease
-        self.min_impurity_split = min_impurity_split
-        self.class_weight = class_weight
+        self.random_state = random_state or 42
+        self.max_leaf_nodes = max_leaf_nodes or 20
+        self.min_impurity_decrease = min_impurity_decrease or 1e-4
+        self.min_impurity_split = min_impurity_split or 2e-4
+        # self.class_weight = class_weight
 
         self.splitter = Splitter(splitter_criteria, self.min_impurity_decrease, self.min_impurity_split,
                                  self.min_samples_split, self.min_samples_leaf)
@@ -66,6 +66,7 @@ class ClassificationAndRegressionTree:
             return True
 
     def fit(self, X:np.ndarray, y:np.ndarray):
+        assert len(X)==len(y), "sample counts of X and y do not match"
         tr = Tree()
         tr.add_root(row_indexes=list(range(X.shape[0])), feature_indexes=list(range(X.shape[1])),
                     impurity=self.splitter.criteria.calculate(y))
@@ -96,12 +97,79 @@ class ClassificationAndRegressionTree:
             walker = Walker(feature_index=fidx, dividing_line=cut_point)
             tr.add_children_for_node(node=leaf, left=left, right=right, walker=walker)
 
-    def
+        self.tree = tr
+        self.feature_count = X.shape[1]
+
+    def fitted(self) -> bool:
+        return hasattr(self, "tree")
+
+
+    # def predict(self, X):
+    #     pass
+    #
+    # def predict_proba(self, X):
+    #     pass
+
+class CartClassifier(ClassificationAndRegressionTree):
+
+    def __init__(self,
+                 criterion='gini',
+                 max_depth=8,
+                 min_samples_split=2,
+                 min_samples_leaf=1,
+                 min_weight_fraction_leaf=0.0,
+                 max_features=None,
+                 random_state=42,
+                 max_leaf_nodes=20,
+                 min_impurity_decrease=1e-4,
+                 min_impurity_split=2e-4,
+                 class_weight = None
+                 ):
+        assert criterion in ['gini', 'entropy']
+        super(CartClassifier, self).__init__(criterion = criterion,
+                                             max_depth = max_depth,
+                                             min_samples_split = min_samples_split,
+                                             min_samples_leaf = min_samples_leaf,
+                                             min_weight_fraction_leaf = min_weight_fraction_leaf,
+                                             max_features = max_features,
+                                             random_state = random_state,
+                                             max_leaf_nodes = max_leaf_nodes,
+                                             min_impurity_decrease = min_impurity_decrease,
+                                             min_impurity_split = min_impurity_split,)
+        self.class_weight = class_weight
+
+    def fit(self, X:np.ndarray, y:np.ndarray):
+        super(CartClassifier, self).fit(X, y)
+        unique, counts = np.unique(y.astype(np.int32), return_counts=True)
+        self.class_count = len(unique)
+        total = len(y)
+
+        if self.class_weight is None:
+            class_weight_value = [1] * self.class_count
+        elif self.class_weight == 'balanced':
+            class_weight_value = [x / total for x in counts]
+        elif isinstance (self.class_weight, dict):
+            assert set(self.class_weight.keys()) == set(unique)
+            class_weight_value = [i[1] for i in sorted(list(self.class_weight.items()), key=lambda x:x[0])]
+        else:
+            raise Exception("The value of class_weight(%s) is not supported" %str(self.class_weight))
+
+        class_dic = {unique[i]: 0 for i in range(len(unique))}
+        for leaf in self.tree.leaves:
+            leaf_p = class_dic.copy()
+            unique_leaf, counts_leaf = np.unique(y[leaf.row_indexes].astype(np.int32), return_counts=True)
+            leaf_dic = {unique_leaf[i]:counts_leaf[i] for i in range(len(unique_leaf))}
+            leaf_p.update(leaf_dic)
+            class_weight_leaf = [i[1] for i in sorted(list(leaf_p.items()), key=lambda x: x[0])]
+            weight = [w1 / w2 for w1, w2 in zip(class_weight_leaf, class_weight_value)]
+            weight_sum = sum(weight)
+            normalized = [i / weight_sum for i in weight]
+            leaf.value = normalized
+
 
     def predict(self, X):
-        pass
+        assert self.fitted()
+
 
     def predict_proba(self, X):
-        pass
-
-
+        assert self.fitted()
