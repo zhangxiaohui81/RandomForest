@@ -3,7 +3,7 @@ class Walker:
 
     def __init__(self, feature_index, dividing_line, go_left_when_equal=True):
         self.feature_index = feature_index
-        self.dividing_line = dividing_line
+        self.dividing_line = dividing_line #
         self.go_left_when_equal = go_left_when_equal
 
     def should_go_left(self, x):

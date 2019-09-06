@@ -164,12 +164,36 @@ class CartClassifier(ClassificationAndRegressionTree):
             weight = [w1 / w2 for w1, w2 in zip(class_weight_leaf, class_weight_value)]
             weight_sum = sum(weight)
             normalized = [i / weight_sum for i in weight]
-            leaf.value = normalized
+            leaf.value = np.array(normalized)
 
 
-    def predict(self, X):
+    def predict(self, X:np.ndarray):
         assert self.fitted()
 
+        predict_value = self.predict_proba(X)
 
-    def predict_proba(self, X):
+        return np.eye(self.class_count)[predict_value.argmax(axis=1)]
+
+
+
+    def predict_proba(self, X:list):
         assert self.fitted()
+
+        predict_proba_value = []
+
+        n = self.tree.root
+
+        for e in X:
+            while not n.is_leaf():
+
+                if n.walker.should_go_left(e):
+                    n=n.left
+                else:
+                    n=n.right
+
+            predict_proba_value.append(n.value)
+
+        return np.ndarray(predict_proba_value)
+
+
+    # 特征重要性
