@@ -14,7 +14,8 @@ class GiniCriteria(Criteria):
 
     def calculate(self, y:np.ndarray):
         unique, counts = np.unique(y.astype(np.int32), return_counts=True)
-        gini = 1 - np.sum((counts.astype(np.float) / len(y)) ** 2)
+        p = counts.astype(np.float) / len(y)
+        gini = 1 - np.sum(p ** 2)
 
         return gini
 
@@ -39,14 +40,15 @@ class LambdaCriteria(Criteria):
 
     def calculate(self, y:np.ndarray):
         avg = y.mean()
-        return sum(map(y, partial(self.func,avg)))
+        lam = sum(map(partial(self.func, avg), y))
+        return lam
 
 
 class MSECriteria(LambdaCriteria):
 
     def __init__(self):
         self.name = 'MSE'
-        self.func = lambda y_pred, y: (y_pred - y) ** 2
+        self.func = lambda y_pred, y: (y - y_pred) ** 2
 
 class MAECriteria(LambdaCriteria):
 
@@ -61,10 +63,22 @@ class MAECriteria(LambdaCriteria):
         # self.func = lambda
 
 
-if __name__ == '__main__':
-    c = np.array([3,4,5,1,2,0,8,1,1])
-    x = GiniCriteria().calculate(c)
-    print(x)
+# if __name__ == '__main__':
+#     c = np.array([3,4,5,1,2,0,8,1,1])
+#     x = GiniCriteria().calculate(c)
+#     print('x',x)
+#
+#     y = EntropyCriteria().calculate(c)
+#     print('y',y)
+#
+#     me = c.mean()
+#     s = sum(((c - me) ** 2))
+#     print('s',s)
+#
+#
+#     z = MSECriteria().calculate(c)
+#     print('z',z)
+#
+#     k = MAECriteria().calculate(c)
+#     print('k', k)
 
-    y = EntropyCriteria().calculate(c)
-    print(y)

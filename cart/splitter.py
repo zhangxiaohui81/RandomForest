@@ -29,19 +29,35 @@ class Splitter:
         for fidx in feature_indexes:
             sorted_row_indexes = sorted(row_indexes, key=lambda r: X[r][fidx])
             lst = []
+
+
             for row in range(len(sorted_row_indexes)-1):
-                cut_point = (X[row][fidx] + X[row+1][fidx]) / 2
+                if abs(X[sorted_row_indexes[row]][fidx] - X[sorted_row_indexes[row+1]][fidx]) < 1e-5:
+                    continue
+                cut_point = (X[sorted_row_indexes[row]][fidx] + X[sorted_row_indexes[row+1]][fidx]) / 2
+
                 left_value = self.criteria.calculate(y[sorted_row_indexes[:row+1]])
                 right_value = self.criteria.calculate(y[sorted_row_indexes[row+1:]])
                 # left_value + right_value
 
                 lst.append((row, cut_point, left_value, right_value, left_value + right_value))
+
+            if not lst:
+                continue
+
+
             cut = min(lst, key=lambda x: x[4])
             left_row_indexes = sorted_row_indexes[:cut[0] + 1]
             right_row_indexes = sorted_row_indexes[cut[0] + 1:]
             lst_feature.append((fidx, cut[1], [(left_row_indexes, cut[2]), (right_row_indexes, cut[3])], cut[4]))
 
+        # from pprint import pprint
+        # pprint(lst_feature)
+        # print("-"*80)
+
         feature_cut = min(lst_feature, key=lambda x: x[3])
+        # print(feature_cut)
+        # print("#"*80)
 
         return feature_cut[:3]
 

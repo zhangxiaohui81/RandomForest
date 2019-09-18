@@ -59,7 +59,7 @@ class Tree:
         right.parent = id(node)
         node.left = left
         node.right = right
-        node.wlker = walker
+        node.walker = walker
         self.leaves.remove(node)
         self.leaves.extend([left, right])
         self.id_to_node[id(left)] = left

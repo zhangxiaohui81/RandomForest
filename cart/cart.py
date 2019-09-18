@@ -4,7 +4,9 @@ from .splitter import Splitter
 from .criteria import Criteria, GiniCriteria, EntropyCriteria, LambdaCriteria, MSECriteria, MAECriteria
 
 class ClassificationAndRegressionTree:
-    ''''''
+    """
+
+    """
 
     def __init__(self,
                  criterion = 'gini',
@@ -70,8 +72,9 @@ class ClassificationAndRegressionTree:
         tr = Tree()
         tr.add_root(row_indexes=list(range(X.shape[0])), feature_indexes=list(range(X.shape[1])),
                     impurity=self.splitter.criteria.calculate(y))
-        leaves_metric = {}
+
         while tr.leaf_count()<self.max_leaf_nodes:
+            leaves_metric = {}
             for leaf in tr.leaves:
                 if self.should_check_leaf(leaf) and id(leaf) not in leaves_metric:
                     fidx, cut_point, parts = self.splitter.split(X, y, feature_indexes=leaf.feature_indexes,
@@ -84,11 +87,6 @@ class ClassificationAndRegressionTree:
 
                     leaves_metric[id(leaf)] = (leaf, fidx, cut_point, (left,right), leaf.impurity-parts[0][1]-parts[1][1])
 
-
-
-            leaves_metric = { leaf_id : metric
-                              for leaf_id,metric in leaves_metric.items()
-                              if self.should_split_hold(metric[0], metric[3][0], metric[3][2]) }
 
             if len(leaves_metric)==0:
                 break
@@ -104,11 +102,6 @@ class ClassificationAndRegressionTree:
         return hasattr(self, "tree")
 
 
-    # def predict(self, X):
-    #     pass
-    #
-    # def predict_proba(self, X):
-    #     pass
 
 class CartClassifier(ClassificationAndRegressionTree):
 
@@ -181,9 +174,8 @@ class CartClassifier(ClassificationAndRegressionTree):
 
         predict_proba_value = []
 
-        n = self.tree.root
-
         for e in X:
+            n = self.tree.root
             while not n.is_leaf():
 
                 if n.walker.should_go_left(e):
@@ -193,7 +185,62 @@ class CartClassifier(ClassificationAndRegressionTree):
 
             predict_proba_value.append(n.value)
 
-        return np.ndarray(predict_proba_value)
+        return np.array(predict_proba_value)
+
+class CartRegression(ClassificationAndRegressionTree):
+
+    def __init__(self,
+                 criterion='mse',
+                 max_depth=8,
+                 min_samples_split=2,
+                 min_samples_leaf=1,
+                 min_weight_fraction_leaf=0.0,
+                 max_features=None,
+                 random_state=42,
+                 max_leaf_nodes=20,
+                 min_impurity_decrease=1e-4,
+                 min_impurity_split=2e-4,
+                 # class_weight=None
+                 ):
+        assert criterion in ['mse', 'mae']
+        super(CartRegression, self).__init__(criterion=criterion,
+                                             max_depth=max_depth,
+                                             min_samples_split=min_samples_split,
+                                             min_samples_leaf=min_samples_leaf,
+                                             min_weight_fraction_leaf=min_weight_fraction_leaf,
+                                             max_features=max_features,
+                                             random_state=random_state,
+                                             max_leaf_nodes=max_leaf_nodes,
+                                             min_impurity_decrease=min_impurity_decrease,
+                                             min_impurity_split=min_impurity_split, )
+        # self.class_weight = class_weight
+
+    def fit(self, X: np.ndarray, y: np.ndarray):
+
+        super(CartRegression, self).fit(X, y)
+
+        for leaf in self.tree.leaves:
+            leaf.value = y[leaf.row_indexes].mean()
+
+
+    def predict(self, X: list):
+        assert self.fitted()
+
+        predict_value = []
+
+        for e in X:
+            n = self.tree.root
+            while not n.is_leaf():
+
+                if n.walker.should_go_left(e):
+                    n = n.left
+                else:
+                    n = n.right
+
+            predict_value.append(n.value)
+
+        return np.array(predict_value)
+
 
 
     # 特征重要性
