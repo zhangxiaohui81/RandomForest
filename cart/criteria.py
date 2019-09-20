@@ -40,7 +40,7 @@ class LambdaCriteria(Criteria):
 
     def calculate(self, y:np.ndarray):
         avg = y.mean()
-        lam = sum(map(partial(self.func, avg), y))
+        lam = sum(map(partial(self.func, avg), y)) / len(y)
         return lam
 
 

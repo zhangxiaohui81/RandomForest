@@ -77,7 +77,7 @@ class ClassificationAndRegressionTree:
             leaves_metric = {}
             for leaf in tr.leaves:
                 if self.should_check_leaf(leaf) and id(leaf) not in leaves_metric:
-                    fidx, cut_point, parts = self.splitter.split(X, y, feature_indexes=leaf.feature_indexes,
+                    fidx, cut_point, parts, impu_dec = self.splitter.split(X, y, feature_indexes=leaf.feature_indexes,
                                                                  row_indexes=leaf.row_indexes, whole_impurity=leaf.impurity)
 
                     left = Node(parent=id(leaf), level=leaf.level + 1, row_indexes=parts[0][0],
@@ -85,7 +85,7 @@ class ClassificationAndRegressionTree:
                     right = Node(parent=id(leaf), level=leaf.level + 1, row_indexes=parts[1][0],
                                  feature_indexes=leaf.feature_indexes, impurity=parts[1][1])
 
-                    leaves_metric[id(leaf)] = (leaf, fidx, cut_point, (left,right), leaf.impurity-parts[0][1]-parts[1][1])
+                    leaves_metric[id(leaf)] = (leaf, fidx, cut_point, (left,right), impu_dec*len(leaf.row_indexes))
 
 
             if len(leaves_metric)==0:
@@ -93,7 +93,9 @@ class ClassificationAndRegressionTree:
 
             leaf, fidx, cut_point, parts, _ = max(leaves_metric.values(), key=lambda x: x[4])
             walker = Walker(feature_index=fidx, dividing_line=cut_point)
-            tr.add_children_for_node(node=leaf, left=left, right=right, walker=walker)
+            # tr.add_children_for_node(node=leaf, left=left, right=right, walker=walker)
+            tr.add_children_for_node(node=leaf, left=parts[0], right=parts[1], walker=walker)
+
 
         self.tree = tr
         self.feature_count = X.shape[1]
@@ -115,7 +117,7 @@ class CartClassifier(ClassificationAndRegressionTree):
                  random_state=42,
                  max_leaf_nodes=20,
                  min_impurity_decrease=1e-4,
-                 min_impurity_split=2e-4,
+                 min_impurity_split=2e-7,
                  class_weight = None
                  ):
         assert criterion in ['gini', 'entropy']
@@ -199,7 +201,7 @@ class CartRegression(ClassificationAndRegressionTree):
                  random_state=42,
                  max_leaf_nodes=20,
                  min_impurity_decrease=1e-4,
-                 min_impurity_split=2e-4,
+                 min_impurity_split=2e-7,
                  # class_weight=None
                  ):
         assert criterion in ['mse', 'mae']

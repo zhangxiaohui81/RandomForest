@@ -30,17 +30,22 @@ class Splitter:
             sorted_row_indexes = sorted(row_indexes, key=lambda r: X[r][fidx])
             lst = []
 
+            whole_count = len(sorted_row_indexes)
 
             for row in range(len(sorted_row_indexes)-1):
-                if abs(X[sorted_row_indexes[row]][fidx] - X[sorted_row_indexes[row+1]][fidx]) < 1e-5:
+                if abs(X[sorted_row_indexes[row]][fidx] - X[sorted_row_indexes[row+1]][fidx]) < 1e-7:
                     continue
                 cut_point = (X[sorted_row_indexes[row]][fidx] + X[sorted_row_indexes[row+1]][fidx]) / 2
 
                 left_value = self.criteria.calculate(y[sorted_row_indexes[:row+1]])
                 right_value = self.criteria.calculate(y[sorted_row_indexes[row+1:]])
+                # impu = left_value + right_value
                 # left_value + right_value
 
-                lst.append((row, cut_point, left_value, right_value, left_value + right_value))
+                left_proportion = (row+1)/whole_count
+                lst.append((row, cut_point, left_value, right_value, left_proportion*left_value + (1-left_proportion)*right_value))
+                # lst.append((row, cut_point, left_value, right_value, left_value + right_value))
+
 
             if not lst:
                 continue
@@ -59,5 +64,6 @@ class Splitter:
         # print(feature_cut)
         # print("#"*80)
 
-        return feature_cut[:3]
+        # return feature_cut[:4]
+        return feature_cut[:3] + (whole_impurity - feature_cut[3],)
 
