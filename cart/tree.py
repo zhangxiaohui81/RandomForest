@@ -1,3 +1,5 @@
+from .utils import Visitor
+
 
 class Walker:
 
@@ -17,8 +19,8 @@ class Walker:
 
 class Node:
 
-    def __init__(self, parent:int=-1, left:'Node'=None, right:'Node'=None,
-                 level:int=0, row_indexes:[int]=None, feature_indexes:[int]=None, impurity:float=-1):
+    def __init__(self, parent: int=-1, left: 'Node'=None, right: 'Node'=None,
+                 level: int=0, row_indexes: [int]=None, feature_indexes: [int]=None, impurity: float=-1):
         self.parent = parent
         self.left = left
         self.right = right
@@ -40,7 +42,7 @@ class Tree:
         self.leaves = []
         self.id_to_node = {}
 
-    def add_root(self, row_indexes:[int], feature_indexes:[int], impurity):
+    def add_root(self, row_indexes: [int], feature_indexes: [int], impurity):
         self.root = Node(row_indexes=row_indexes, feature_indexes=feature_indexes, impurity=impurity)
         self.leaves = [self.root, ]
         self.id_to_node[id(self.root)] = self.root
@@ -49,12 +51,12 @@ class Tree:
         return len(self.leaves)
 
     def height(self):
-        return max([leaf.level for leaf in self.leaves])+1
+        return max([leaf.level for leaf in self.leaves]) + 1
 
     def empty(self):
         return self.root is None
 
-    def add_children_for_node(self, node:Node, left:Node, right:Node, walker:Walker):
+    def add_children_for_node(self, node: Node, left: Node, right: Node, walker: Walker):
         left.parent = id(node)
         right.parent = id(node)
         node.left = left
@@ -65,4 +67,27 @@ class Tree:
         self.id_to_node[id(left)] = left
         self.id_to_node[id(right)] = right
 
+    def nodes(self):
+        ns=[self.root]
+        while ns:
+            n = ns[0]
+            del ns[0]
+            if n.left is not None:
+                ns.append(n.left)
+            if n.right is not None:
+                ns.append(n.right)
+            yield n
 
+    def accept(self, visitor: Visitor):
+        for n in self.nodes():
+            visitor.visit(node=n)
+
+
+class CleanVisitor(Visitor):
+    def visit(self, node: Node):
+        self.clean(node)
+
+    def clean(self, node: Node):
+        del node.row_indexes
+        del node.impurity
+        del node.feature_indexes
