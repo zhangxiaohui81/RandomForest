@@ -42,9 +42,11 @@ class Splitter:
             whole_count = len(sorted_row_indexes)
 
             for row in range(len(sorted_row_indexes)-1):
-                if abs(x[sorted_row_indexes[row]][fidx] - x[sorted_row_indexes[row+1]][fidx]) < 1e-7:
+
+                fcol = x[:,fidx]
+                if abs(fcol[sorted_row_indexes[row]] - fcol[sorted_row_indexes[row+1]]) < 1e-7:
                     continue
-                cut_point = (x[sorted_row_indexes[row]][fidx] + x[sorted_row_indexes[row+1]][fidx]) / 2
+                cut_point = (fcol[sorted_row_indexes[row]] + fcol[sorted_row_indexes[row+1]]) / 2
 
                 left_value = self.criteria.calculate(y[sorted_row_indexes[:row+1]])
                 right_value = self.criteria.calculate(y[sorted_row_indexes[row+1:]])
