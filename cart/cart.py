@@ -5,52 +5,27 @@ from .criteria import Criteria, GiniCriteria, EntropyCriteria, LambdaCriteria, M
 
 
 class ClassificationAndRegressionTree:
+    """Base class for decision trees.
     """
-    One-dimensional ndarray with axis labels (including time series).
 
-    Labels need not be unique but must be a hashable type. The object
-    supports both integer- and label-based indexing and provides a host of
-    methods for performing operations involving the index. Statistical
-    methods from ndarray have been overridden to automatically exclude
-    missing data (currently represented as NaN).
-
-    Operations between Series (+, -, /, *, **) align values based on their
-    associated index values-- they need not be the same length. The result
-    index will be the sorted union of the two indexes.
-
-    Parameters
-    ----------
-    data : array-like, Iterable, dict, or scalar value
-        Contains data stored in Series.
-
-        .. versionchanged :: 0.23.0
-           If data is a dict, argument order is maintained for Python 3.6
-           and later.
-
-    index : array-like or Index (1d)
-        Values must be hashable and have the same length as `data`.
-        Non-unique index values are allowed. Will default to
-        RangeIndex (0, 1, 2, ..., n) if not provided. If both a dict and index
-        sequence are used, the index will override the keys found in the
-        dict.
-    dtype : str, numpy.dtype, or ExtensionDtype, optional
-        dtype for the output Series. If not specified, this will be
-        inferred from `data`.
-        See the :ref:`user guide <basics.dtypes>` for more usages.
-    copy : bool, default False
-        Copy input data.
-    """
     def __init__(self,
                  criterion="gini",
                  max_depth=8,
                  min_samples_split=2,
                  min_samples_leaf=1,
-                 min_weight_fraction_leaf=0.0,
                  max_features=None,
                  random_state=42,
                  max_leaf_nodes=20,
                  min_impurity_decrease=1e-4,
                  min_impurity_split=2e-4):
+        self.max_depth = max_depth or 8
+        self.min_samples_split = min_samples_split or 2
+        self.min_samples_leaf = min_samples_leaf or 1
+        self.max_features = max_features
+        self.random_state = random_state or 42
+        self.max_leaf_nodes = max_leaf_nodes or 20
+        self.min_impurity_decrease = min_impurity_decrease or 1e-4
+        self.min_impurity_split = min_impurity_split or 2e-4
         if criterion == 'gini':
             splitter_criteria = GiniCriteria()
         elif criterion == 'entropy':
@@ -61,16 +36,6 @@ class ClassificationAndRegressionTree:
             splitter_criteria = MAECriteria()
         else:
             raise NotImplemented
-
-        self.max_depth = max_depth or 8
-        self.min_samples_split = min_samples_split or 2
-        self.min_samples_leaf = min_samples_leaf or 1
-        self.min_weight_fraction_leaf = min_weight_fraction_leaf or 0.0
-        self.max_features = max_features
-        self.random_state = random_state or 42
-        self.max_leaf_nodes = max_leaf_nodes or 20
-        self.min_impurity_decrease = min_impurity_decrease or 1e-4
-        self.min_impurity_split = min_impurity_split or 2e-4
 
         self.splitter = Splitter(splitter_criteria, self.min_impurity_decrease, self.min_impurity_split,
                                  self.min_samples_split, self.min_samples_leaf)
@@ -94,6 +59,8 @@ class ClassificationAndRegressionTree:
             return True
 
     def fit(self, x: np.ndarray, y: np.ndarray):
+        """Constructing decision tree.
+        """
         assert len(x) == len(y), "sample counts of X and y do not match"
         tr = Tree()
         tr.add_root(row_indexes=list(range(x.shape[0])), feature_indexes=list(range(x.shape[1])),
@@ -130,26 +97,114 @@ class ClassificationAndRegressionTree:
 
 
 class CartClassifier(ClassificationAndRegressionTree):
+    """A decision tree classifier.
 
+    Parameters
+    ----------
+    criterion : string, optional (default="gini")
+        The function to measure the quality of a split. Supported criteria are
+        "gini" for the Gini impurity and "entropy" for the information gain.
+
+    max_depth : int, optional (default=8)
+        The maximum depth of the tree.
+
+    min_samples_split : int, optional (default=2)
+        The minimum number of samples required to split an internal node.
+
+    min_samples_leaf : int, optional (default=1)
+        The minimum number of samples required to be at a leaf node.
+
+    max_features=None,
+    random_state=42,
+
+    max_leaf_nodes : int, optional (default=20)
+        Grow a tree with ``max_leaf_nodes`` in best-first fashion.
+        Best nodes are defined as relative reduction in impurity.
+
+    min_impurity_decrease : float, optional (default=1e-4)
+        A node will be split if this split induces a decrease of the impurity
+        greater than or equal to this value.
+
+        The weighted impurity decrease equation is the following::
+
+            N * (whole_impurity - N_R / N_t * right_impurity - N_L / N * left_impurity)
+
+        where ``N`` is the number of samples at the current node,
+        ``N_L`` is the number of samples in the left child,
+        and ``N_R`` is the number of samples in the right child.
+
+        ``N``, ``N_R`` and ``N_L`` all refer to the weighted sum,
+        if ``sample_weight`` is passed.
+
+    min_impurity_split : float, (default=2e-7)
+        Threshold for early stopping in tree growth. A node will split
+        if its impurity is above the threshold, otherwise it is a leaf.
+
+    class_weight=None
+
+
+
+
+下面的是还未解决的参数
+    max_features : int, float, string or None, optional (default="auto")
+        The number of features to consider when looking for the best split:
+
+            - If int, then consider `max_features` features at each split.
+            - If float, then `max_features` is a fraction and
+              `int(max_features * n_features)` features are considered at each
+              split.
+            - If "auto", then `max_features=sqrt(n_features)`.
+            - If "sqrt", then `max_features=sqrt(n_features)`.
+            - If "log2", then `max_features=log2(n_features)`.
+            - If None, then `max_features=n_features`.
+
+        Note: the search for a split does not stop until at least one
+        valid partition of the node samples is found, even if it requires to
+        effectively inspect more than ``max_features`` features.
+
+    random_state : int, RandomState instance or None, optional (default=None)
+        If int, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`.
+
+    class_weight : dict, "balanced" or None, default=None
+        Weights associated with classes in the form ``{class_label: weight}``.
+        If not given, all classes are supposed to have weight one. For
+        multi-output problems, a list of dicts can be provided in the same
+        order as the columns of y.
+
+        Note that for multioutput (including multilabel) weights should be
+        defined for each class of every column in its own dict. For example,
+        for four-class multilabel classification weights should be
+        [{0: 1, 1: 1}, {0: 1, 1: 5}, {0: 1, 1: 1}, {0: 1, 1: 1}] instead of
+        [{1:1}, {2:5}, {3:1}, {4:1}].
+
+        The "balanced" mode uses the values of y to automatically adjust
+        weights inversely proportional to class frequencies in the input data
+        as ``n_samples / (n_classes * np.bincount(y))``
+
+        For multi-output, the weights of each column of y will be multiplied.
+
+        Note that these weights will be multiplied with sample_weight (passed
+        through the fit method) if sample_weight is specified.
+    """
     def __init__(self,
                  criterion="gini",
                  max_depth=8,
                  min_samples_split=2,
                  min_samples_leaf=1,
-                 min_weight_fraction_leaf=0.0,
                  max_features=None,
                  random_state=42,
                  max_leaf_nodes=20,
                  min_impurity_decrease=1e-4,
                  min_impurity_split=2e-7,
-                 class_weight = None
-                 ):
+                 class_weight=None):
         assert criterion in ['gini', 'entropy']
         super(CartClassifier, self).__init__(criterion=criterion,
                                              max_depth=max_depth,
                                              min_samples_split=min_samples_split,
                                              min_samples_leaf=min_samples_leaf,
-                                             min_weight_fraction_leaf=min_weight_fraction_leaf,
                                              max_features=max_features,
                                              random_state=random_state,
                                              max_leaf_nodes=max_leaf_nodes,
@@ -181,20 +236,49 @@ class CartClassifier(ClassificationAndRegressionTree):
             leaf_p.update(leaf_dic)
             class_weight_leaf = [i[1] for i in sorted(list(leaf_p.items()), key=lambda x: x[0])]
             weight = [w1 / w2 for w1, w2 in zip(class_weight_leaf, class_weight_value)]
-            weight_sum = sum(weight)
-            normalized = [i / weight_sum for i in weight]
+            weight_leaf_sum = sum(weight)
+            normalized = [i / weight_leaf_sum for i in weight]
             leaf.value = np.array(normalized)
 
         self.tree.accept(CleanVisitor())
 
     def predict(self, x: np.ndarray):
+        """Predict class or regression value for X.
+
+        Parameters
+        ----------
+        x : array-like or sparse matrix of shape = [n_samples, n_features]
+            The input samples. Internally, it will be converted to ``dtype=np.float64``.
+
+        Returns
+        -------
+        y : array of shape = [n_samples]
+            The predicted values.
+        """
         assert self.fitted()
 
         predict_value = self.predict_proba(x)
 
         return predict_value.argmax(axis=1)
 
-    def predict_proba(self, x: list):
+    def predict_proba(self, x: np.ndarray):
+        """Predict class probabilities of the input samples X.
+
+        The predicted class probability is the fraction of samples of the same
+        class in a leaf.
+
+        Parameters
+        ----------
+        x : array-like or sparse matrix of shape = [n_samples, n_features]
+            The input samples. Internally, it will be converted to
+            ``dtype=np.float64``.
+
+        Returns
+        -------
+        p : array of shape = [n_samples, n_classes].
+            The class probabilities of the input samples. The order of the
+            classes corresponds to that in the attribute class.
+        """
         assert self.fitted()
 
         predict_proba_value = []
@@ -220,7 +304,6 @@ class CartRegression(ClassificationAndRegressionTree):
                  max_depth=8,
                  min_samples_split=2,
                  min_samples_leaf=1,
-                 min_weight_fraction_leaf=0.0,
                  max_features=None,
                  random_state=42,
                  max_leaf_nodes=20,
@@ -231,7 +314,6 @@ class CartRegression(ClassificationAndRegressionTree):
                                              max_depth=max_depth,
                                              min_samples_split=min_samples_split,
                                              min_samples_leaf=min_samples_leaf,
-                                             min_weight_fraction_leaf=min_weight_fraction_leaf,
                                              max_features=max_features,
                                              random_state=random_state,
                                              max_leaf_nodes=max_leaf_nodes,
@@ -247,7 +329,7 @@ class CartRegression(ClassificationAndRegressionTree):
 
         self.tree.accept(CleanVisitor())
 
-    def predict(self, x: list):
+    def predict(self, x: np.ndarray):
         assert self.fitted()
 
         predict_value = []

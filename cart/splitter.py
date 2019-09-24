@@ -21,11 +21,16 @@ class Splitter:
         """
         Parameters
         ----------
-        x:
-        y:
-        feature_indexes:
-        row_indexes:
-        whole_impurity:
+        x : array-like or sparse matrix of shape = [n_samples, n_features]
+            The input samples. Internally, it will be converted to ``dtype=np.float64``.
+
+        y : array of shape = [n_samples].
+
+        feature_indexes : index number of participatory splitting features
+
+        row_indexes : index number of sample
+
+        whole_impurity : impurity before splitting
 
         Returns
         -------
