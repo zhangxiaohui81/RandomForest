@@ -1,4 +1,4 @@
-from cart.cart import CartRegression
+from cart.cart import CartRegressor
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_diabetes
@@ -13,14 +13,13 @@ data['target'] = load_diabetes().target
 X_train, X_test, y_train, y_test = train_test_split(data.drop('target', axis=1), data['target'], test_size=0.3, random_state=42)
 
 # 回归决策树结果预测
-regression = CartRegression(max_depth=8,
+regression = CartRegressor(max_depth=8,
                             min_samples_split=2,
                             min_samples_leaf=1,
-                            min_weight_fraction_leaf=0.0,
                             max_features=None,
                             random_state=42,
                             max_leaf_nodes=6,
-                            min_impurity_decrease=1e-4,)
+                            min_impurity_decrease=2e-7)
 regression.fit(X_train.values, y_train.values)
 our_predict_result = regression.predict(X_test.values)
 

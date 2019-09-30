@@ -2,7 +2,7 @@ import numpy as np
 from .tree import Walker, Node, Tree, CleanVisitor
 from .splitter import Splitter
 from .criteria import Criteria, GiniCriteria, EntropyCriteria, LambdaCriteria, MSECriteria, MAECriteria
-
+from .sampler import SimpleSampler
 
 class ClassificationAndRegressionTree:
     """Base class for decision trees.
@@ -17,7 +17,7 @@ class ClassificationAndRegressionTree:
                  random_state=42,
                  max_leaf_nodes=20,
                  min_impurity_decrease=1e-4,
-                 min_impurity_split=2e-4):
+                 min_impurity_split=2e-7):
         self.max_depth = max_depth or 8
         self.min_samples_split = min_samples_split or 2
         self.min_samples_leaf = min_samples_leaf or 1
@@ -36,6 +36,8 @@ class ClassificationAndRegressionTree:
             splitter_criteria = MAECriteria()
         else:
             raise NotImplemented
+
+        self.feature_sampler = SimpleSampler(self.random_state, quantity=max_features)
 
         self.splitter = Splitter(splitter_criteria, self.min_impurity_decrease, self.min_impurity_split,
                                  self.min_samples_split, self.min_samples_leaf)
@@ -58,12 +60,12 @@ class ClassificationAndRegressionTree:
         else:
             return True
 
-    def fit(self, x: np.ndarray, y: np.ndarray):
+    def fit(self, X: np.ndarray, y: np.ndarray):
         """Constructing decision tree.
         """
-        assert len(x) == len(y), "sample counts of X and y do not match"
+        assert len(X) == len(y), "sample counts of X and y do not match"
         tr = Tree()
-        tr.add_root(row_indexes=list(range(x.shape[0])), feature_indexes=list(range(x.shape[1])),
+        tr.add_root(row_indexes=list(range(X.shape[0])), feature_indexes=list(range(X.shape[1])),
                     impurity=self.splitter.criteria.calculate(y))
 
         leaves_metric = {}
@@ -71,7 +73,9 @@ class ClassificationAndRegressionTree:
 
             for leaf in tr.leaves:
                 if self.should_check_leaf(leaf) and id(leaf) not in leaves_metric:
-                    fidx, cut_point, parts, impu_dec = self.splitter.split(x, y, feature_indexes=leaf.feature_indexes,
+
+                    features_to_consider = self.feature_sampler.sample(leaf.feature_indexes)
+                    fidx, cut_point, parts, impu_dec = self.splitter.split(X, y, feature_indexes=features_to_consider,
                                                                            row_indexes=leaf.row_indexes, whole_impurity=leaf.impurity)
 
                     left = Node(parent=id(leaf), level=leaf.level + 1, row_indexes=parts[0][0],
@@ -90,7 +94,7 @@ class ClassificationAndRegressionTree:
             del leaves_metric[id(leaf)]
 
         self.tree = tr
-        self.feature_count = x.shape[1]
+        self.feature_count = X.shape[1]
 
     def fitted(self) -> bool:
         return hasattr(self, "tree")
@@ -212,8 +216,8 @@ class CartClassifier(ClassificationAndRegressionTree):
                                              min_impurity_split=min_impurity_split,)
         self.class_weight = class_weight
 
-    def fit(self, x: np.ndarray, y: np.ndarray):
-        super(CartClassifier, self).fit(x, y)
+    def fit(self, X: np.ndarray, y: np.ndarray):
+        super(CartClassifier, self).fit(X, y)
         unique, counts = np.unique(y.astype(np.int32), return_counts=True)
         self.class_count = len(unique)
         total = len(y)
@@ -242,7 +246,7 @@ class CartClassifier(ClassificationAndRegressionTree):
 
         self.tree.accept(CleanVisitor())
 
-    def predict(self, x: np.ndarray):
+    def predict(self, X: np.ndarray):
         """Predict class or regression value for X.
 
         Parameters
@@ -257,11 +261,11 @@ class CartClassifier(ClassificationAndRegressionTree):
         """
         assert self.fitted()
 
-        predict_value = self.predict_proba(x)
+        predict_value = self.predict_proba(X)
 
         return predict_value.argmax(axis=1)
 
-    def predict_proba(self, x: np.ndarray):
+    def predict_proba(self, X: np.ndarray):
         """Predict class probabilities of the input samples X.
 
         The predicted class probability is the fraction of samples of the same
@@ -283,7 +287,7 @@ class CartClassifier(ClassificationAndRegressionTree):
 
         predict_proba_value = []
 
-        for e in x:
+        for e in X:
             n = self.tree.root
             while not n.is_leaf():
 
@@ -297,7 +301,7 @@ class CartClassifier(ClassificationAndRegressionTree):
         return np.array(predict_proba_value)
 
 
-class CartRegression(ClassificationAndRegressionTree):
+class CartRegressor(ClassificationAndRegressionTree):
 
     def __init__(self,
                  criterion='mse',
@@ -308,9 +312,9 @@ class CartRegression(ClassificationAndRegressionTree):
                  random_state=42,
                  max_leaf_nodes=20,
                  min_impurity_decrease=1e-4,
-                 min_impurity_split=2e-7,):
+                 min_impurity_split=2e-7):
         assert criterion in ['mse', 'mae']
-        super(CartRegression, self).__init__(criterion=criterion,
+        super(CartRegressor, self).__init__(criterion=criterion,
                                              max_depth=max_depth,
                                              min_samples_split=min_samples_split,
                                              min_samples_leaf=min_samples_leaf,
@@ -318,23 +322,23 @@ class CartRegression(ClassificationAndRegressionTree):
                                              random_state=random_state,
                                              max_leaf_nodes=max_leaf_nodes,
                                              min_impurity_decrease=min_impurity_decrease,
-                                             min_impurity_split=min_impurity_split, )
+                                             min_impurity_split=min_impurity_split)
 
-    def fit(self, x: np.ndarray, y: np.ndarray):
+    def fit(self, X: np.ndarray, y: np.ndarray):
 
-        super(CartRegression, self).fit(x, y)
+        super(CartRegressor, self).fit(X, y)
 
         for leaf in self.tree.leaves:
             leaf.value = y[leaf.row_indexes].mean()
 
         self.tree.accept(CleanVisitor())
 
-    def predict(self, x: np.ndarray):
+    def predict(self, X: np.ndarray):
         assert self.fitted()
 
         predict_value = []
 
-        for e in x:
+        for e in X:
             n = self.tree.root
             while not n.is_leaf():
 
