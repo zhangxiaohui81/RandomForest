@@ -17,15 +17,20 @@ class Splitter:
         self.min_samples_split = min_samples_split
         self.min_samples_leaf = min_samples_leaf
 
-    def split(self, x, y, feature_indexes: [int], row_indexes: [int], whole_impurity: float) -> (int, float, [([int], float)]):
+    def split(self, X, y, feature_indexes: [int], row_indexes: [int], whole_impurity: float) -> (int, float, [([int], float)]):
         """
         Parameters
         ----------
-        x:
-        y:
-        feature_indexes:
-        row_indexes:
-        whole_impurity:
+        x : array-like or sparse matrix of shape = [n_samples, n_features]
+            The input samples. Internally, it will be converted to ``dtype=np.float64``.
+
+        y : array of shape = [n_samples].
+
+        feature_indexes : index number of participatory splitting features
+
+        row_indexes : index number of sample
+
+        whole_impurity : impurity before splitting
 
         Returns
         -------
@@ -42,11 +47,9 @@ class Splitter:
             whole_count = len(sorted_row_indexes)
 
             for row in range(len(sorted_row_indexes)-1):
-
-                fcol = x[:,fidx]
-                if abs(fcol[sorted_row_indexes[row]] - fcol[sorted_row_indexes[row+1]]) < 1e-7:
+                if abs(X[sorted_row_indexes[row]][fidx] - X[sorted_row_indexes[row+1]][fidx]) < 1e-7:
                     continue
-                cut_point = (fcol[sorted_row_indexes[row]] + fcol[sorted_row_indexes[row+1]]) / 2
+                cut_point = (X[sorted_row_indexes[row]][fidx] + X[sorted_row_indexes[row+1]][fidx]) / 2
 
                 left_value = self.criteria.calculate(y[sorted_row_indexes[:row+1]])
                 right_value = self.criteria.calculate(y[sorted_row_indexes[row+1:]])
