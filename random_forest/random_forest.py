@@ -161,3 +161,4 @@ class RandomForestRegressor:
             predict_value.append(np.array(predict_sample).mean())
 
         return np.array(predict_value)
+
