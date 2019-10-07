@@ -4,6 +4,7 @@ from .splitter import Splitter
 from .criteria import Criteria, GiniCriteria, EntropyCriteria, LambdaCriteria, MSECriteria, MAECriteria
 from .sampler import SimpleSampler
 
+
 class ClassificationAndRegressionTree:
     """Base class for decision trees.
     """
@@ -73,17 +74,17 @@ class ClassificationAndRegressionTree:
 
             for leaf in tr.leaves:
                 if self.should_check_leaf(leaf) and id(leaf) not in leaves_metric:
-
                     features_to_consider = self.feature_sampler.sample(leaf.feature_indexes)
                     fidx, cut_point, parts, impu_dec = self.splitter.split(X, y, feature_indexes=features_to_consider,
-                                                                           row_indexes=leaf.row_indexes, whole_impurity=leaf.impurity)
+                                                                           row_indexes=leaf.row_indexes,
+                                                                           whole_impurity=leaf.impurity)
 
                     left = Node(parent=id(leaf), level=leaf.level + 1, row_indexes=parts[0][0],
                                 feature_indexes=leaf.feature_indexes, impurity=parts[0][1])
                     right = Node(parent=id(leaf), level=leaf.level + 1, row_indexes=parts[1][0],
                                  feature_indexes=leaf.feature_indexes, impurity=parts[1][1])
 
-                    leaves_metric[id(leaf)] = (leaf, fidx, cut_point, (left,right), impu_dec*len(leaf.row_indexes))
+                    leaves_metric[id(leaf)] = (leaf, fidx, cut_point, (left, right), impu_dec * len(leaf.row_indexes))
 
             if len(leaves_metric) == 0:
                 break
@@ -118,8 +119,20 @@ class CartClassifier(ClassificationAndRegressionTree):
     min_samples_leaf : int, optional (default=1)
         The minimum number of samples required to be at a leaf node.
 
-    max_features=None,
-    random_state=42,
+    max_features ： int, float, string or None, optional (default="None")
+        The number of features to consider when looking for the best split:
+
+            - If int, then consider `max_features` features at each split.
+            - If float, then max_features is a percentage
+              and int(max_features * n_features) features are considered at each split.
+            - If "auto", then `max_features=sqrt(n_features)`.
+            - If "sqrt", then `max_features=sqrt(n_features)`.
+            - If "log2", then `max_features=log2(n_features)`.
+            - If None, then `max_features=n_features`.
+            - If "all", then `max_features=n_features`.
+
+    random_state ： int, optional (default=42)
+        If int, random_state is the seed used by the random number generator;
 
     max_leaf_nodes : int, optional (default=20)
         Grow a tree with ``max_leaf_nodes`` in best-first fashion.
@@ -144,35 +157,35 @@ class CartClassifier(ClassificationAndRegressionTree):
         Threshold for early stopping in tree growth. A node will split
         if its impurity is above the threshold, otherwise it is a leaf.
 
-    class_weight=None
 
 
 
 
-下面的是还未解决的参数
-    max_features : int, float, string or None, optional (default="auto")
-        The number of features to consider when looking for the best split:
 
-            - If int, then consider `max_features` features at each split.
-            - If float, then `max_features` is a fraction and
-              `int(max_features * n_features)` features are considered at each
-              split.
-            - If "auto", then `max_features=sqrt(n_features)`.
-            - If "sqrt", then `max_features=sqrt(n_features)`.
-            - If "log2", then `max_features=log2(n_features)`.
-            - If None, then `max_features=n_features`.
 
-        Note: the search for a split does not stop until at least one
-        valid partition of the node samples is found, even if it requires to
-        effectively inspect more than ``max_features`` features.
 
-    random_state : int, RandomState instance or None, optional (default=None)
-        If int, random_state is the seed used by the random number generator;
-        If RandomState instance, random_state is the random number generator;
-        If None, the random number generator is the RandomState instance used
-        by `np.random`.
 
-    class_weight : dict, "balanced" or None, default=None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    class_weight ： dict, "balanced" or None, default=None
         Weights associated with classes in the form ``{class_label: weight}``.
         If not given, all classes are supposed to have weight one. For
         multi-output problems, a list of dicts can be provided in the same
@@ -184,15 +197,17 @@ class CartClassifier(ClassificationAndRegressionTree):
         [{0: 1, 1: 1}, {0: 1, 1: 5}, {0: 1, 1: 1}, {0: 1, 1: 1}] instead of
         [{1:1}, {2:5}, {3:1}, {4:1}].
 
-        The "balanced" mode uses the values of y to automatically adjust
-        weights inversely proportional to class frequencies in the input data
-        as ``n_samples / (n_classes * np.bincount(y))``
+        The "balanced" model uses the value of y to automatically adjust
+        weights, and the frequency of categories in the input data is inversely
+        proportional to the total sample size::
+        ``np.bincount(y) / n_samples``
 
-        For multi-output, the weights of each column of y will be multiplied.
 
-        Note that these weights will be multiplied with sample_weight (passed
-        through the fit method) if sample_weight is specified.
+
+
+
     """
+
     def __init__(self,
                  criterion="gini",
                  max_depth=8,
@@ -204,7 +219,8 @@ class CartClassifier(ClassificationAndRegressionTree):
                  min_impurity_decrease=1e-4,
                  min_impurity_split=2e-7,
                  class_weight=None):
-        assert criterion in ['gini', 'entropy']
+        assert criterion in ["gini", "entropy"]
+
         super(CartClassifier, self).__init__(criterion=criterion,
                                              max_depth=max_depth,
                                              min_samples_split=min_samples_split,
@@ -213,7 +229,7 @@ class CartClassifier(ClassificationAndRegressionTree):
                                              random_state=random_state,
                                              max_leaf_nodes=max_leaf_nodes,
                                              min_impurity_decrease=min_impurity_decrease,
-                                             min_impurity_split=min_impurity_split,)
+                                             min_impurity_split=min_impurity_split, )
         self.class_weight = class_weight
 
     def fit(self, X: np.ndarray, y: np.ndarray):
@@ -228,7 +244,7 @@ class CartClassifier(ClassificationAndRegressionTree):
             class_weight_value = [x / total for x in counts]
         elif isinstance(self.class_weight, dict):
             assert set(self.class_weight.keys()) == set(unique)
-            class_weight_value = [i[1] for i in sorted(list(self.class_weight.items()), key=lambda x:x[0])]
+            class_weight_value = [i[1] for i in sorted(list(self.class_weight.items()), key=lambda x: x[0])]
         else:
             raise Exception("The value of class_weight(%s) is not supported" % str(self.class_weight))
 
@@ -236,7 +252,7 @@ class CartClassifier(ClassificationAndRegressionTree):
         for leaf in self.tree.leaves:
             leaf_p = class_dic.copy()
             unique_leaf, counts_leaf = np.unique(y[leaf.row_indexes].astype(np.int32), return_counts=True)
-            leaf_dic = {unique_leaf[i]:counts_leaf[i] for i in range(len(unique_leaf))}
+            leaf_dic = {unique_leaf[i]: counts_leaf[i] for i in range(len(unique_leaf))}
             leaf_p.update(leaf_dic)
             class_weight_leaf = [i[1] for i in sorted(list(leaf_p.items()), key=lambda x: x[0])]
             weight = [w1 / w2 for w1, w2 in zip(class_weight_leaf, class_weight_value)]
@@ -315,14 +331,14 @@ class CartRegressor(ClassificationAndRegressionTree):
                  min_impurity_split=2e-7):
         assert criterion in ['mse', 'mae']
         super(CartRegressor, self).__init__(criterion=criterion,
-                                             max_depth=max_depth,
-                                             min_samples_split=min_samples_split,
-                                             min_samples_leaf=min_samples_leaf,
-                                             max_features=max_features,
-                                             random_state=random_state,
-                                             max_leaf_nodes=max_leaf_nodes,
-                                             min_impurity_decrease=min_impurity_decrease,
-                                             min_impurity_split=min_impurity_split)
+                                            max_depth=max_depth,
+                                            min_samples_split=min_samples_split,
+                                            min_samples_leaf=min_samples_leaf,
+                                            max_features=max_features,
+                                            random_state=random_state,
+                                            max_leaf_nodes=max_leaf_nodes,
+                                            min_impurity_decrease=min_impurity_decrease,
+                                            min_impurity_split=min_impurity_split)
 
     def fit(self, X: np.ndarray, y: np.ndarray):
 

@@ -41,7 +41,7 @@ class Splitter:
 
         lst_feature = []
         for fidx in feature_indexes:
-            sorted_row_indexes = sorted(row_indexes, key=lambda r: x[r][fidx])
+            sorted_row_indexes = sorted(row_indexes, key=lambda r: X[r][fidx])
             lst = []
 
             whole_count = len(sorted_row_indexes)
