@@ -7,15 +7,15 @@ from sklearn.tree import DecisionTreeClassifier
 pd.set_option('display.max_colwidth', 1000)
 pd.set_option('display.max_columns', None)
 
-# 训练鸢尾花分类
-# 获取数据
+# Training Iris Classification
+# get data
 col = ['sepal_length', 'sepal_width', 'petal_length', 'petal width']
 data = pd.DataFrame(load_iris().data, columns=col)
 data['target'] = load_iris().target
 X_train, X_test, y_train, y_test = train_test_split(data.drop('target', axis=1), data['target'], test_size=0.3,
                                                     random_state=42)
 
-# 分类决策树结果预测
+# Result Prediction of classification Decision Tree
 classifier = CartClassifier(criterion="gini",
                             max_depth=8,
                             min_samples_split=2,
@@ -30,7 +30,7 @@ classifier.fit(X_train.values, y_train.values)
 
 our_predict_result = classifier.predict(X_test.values)
 
-# sklearn分类决策树预测
+# sklearn classification decision tree prediction
 clf = DecisionTreeClassifier(criterion="gini",
                              max_depth=8,
                              min_samples_split=2,
@@ -46,7 +46,7 @@ clf.fit(X_train, y_train)
 
 skl_predict_result = clf.predict(X_test)
 
-# 各自预测结果输出对比
+# Output comparison of respective prediction results
 df = list(zip(our_predict_result, y_test, skl_predict_result))
 col = ['our_predict_result', 'y_test', 'skl_predict_result']
 result = pd.DataFrame(df, columns=col).T

@@ -7,14 +7,14 @@ pd.set_option('display.max_colwidth', 1000)
 pd.set_option('display.max_columns', None)
 from time import *
 
-# 训练鸢尾花分类
-# 获取数据
+# Training Iris Classification
+# get data
 col = ['sepal_length', 'sepal_width', 'petal_length', 'petal width']
 data = pd.DataFrame(load_iris().data, columns=col)
 data['target'] = load_iris().target
 X_train, X_test, y_train, y_test = train_test_split(data.drop('target', axis=1), data['target'], test_size=0.3, random_state=42)
 
-# 分类决策树结果预测
+# Result Prediction of classification Decision Tree
 classifier = my_RandomForestClassifier(n_estimators=10,
                                        criterion="gini",
                                        max_depth=None,
@@ -36,7 +36,7 @@ our_begin_time_predict = time()
 our_predict_result = classifier.predict(X_test.values)
 our_end_time_predict = time()
 
-# sklearn分类决策树预测
+# RandomForestClassifier classification decision tree prediction
 clf = skl_RandomForestClassifier(n_estimators=10,
                                  criterion="gini",
                                  max_depth=None,
@@ -63,7 +63,7 @@ skl_begin_time_predict = time()
 skl_predict_result = clf.predict(X_test)
 skl_end_time_predict = time()
 
-# 各自预测结果输出对比
+# Output comparison of respective prediction results
 df = list(zip(our_predict_result, y_test, skl_predict_result))
 col = ['our_predict_result', 'y_test', 'skl_predict_result']
 result = pd.DataFrame(df, columns=col).T
