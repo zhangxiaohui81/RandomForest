@@ -1,4 +1,4 @@
-# TreeModel-Random Forest
+# Random Forest
 
 Using Python to implement random forest algorithm. The supporting functions are as follows:
 
