@@ -5,7 +5,6 @@ from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier as skl_RandomForestClassifier
 pd.set_option('display.max_colwidth', 1000)
 pd.set_option('display.max_columns', None)
-from time import *
 
 # Training Iris Classification
 # get data
@@ -28,13 +27,9 @@ classifier = my_RandomForestClassifier(n_estimators=10,
                                        random_state=42,
                                        class_weight=None)
 
-our_begin_time_fit = time()
 classifier.fit(X_train.values, y_train.values)
-our_end_time_fit = time()
 
-our_begin_time_predict = time()
 our_predict_result = classifier.predict(X_test.values)
-our_end_time_predict = time()
 
 # RandomForestClassifier classification decision tree prediction
 clf = skl_RandomForestClassifier(n_estimators=10,
@@ -55,13 +50,9 @@ clf = skl_RandomForestClassifier(n_estimators=10,
                                  warm_start=False,
                                  class_weight=None)
 
-skl_begin_time_fit = time()
 clf.fit(X_train,y_train)
-skl_end_time_fit = time()
 
-skl_begin_time_predict = time()
 skl_predict_result = clf.predict(X_test)
-skl_end_time_predict = time()
 
 # Output comparison of respective prediction results
 df = list(zip(our_predict_result, y_test, skl_predict_result))

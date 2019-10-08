@@ -68,4 +68,3 @@ class Splitter:
         feature_cut = min(lst_feature, key=lambda x: x[3])
 
         return feature_cut[:3] + (whole_impurity - feature_cut[3],)
-
